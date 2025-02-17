@@ -1,16 +1,18 @@
 [project]
-name = "parser-template"
+name = "avito-prices-scraper"
 version = "0.1.0"
-description = "Add your description here"
+description = "App for scraping prices from Avito"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "beautifulsoup4>=4.12.3",
     "fake-useragent>=2.0.3",
-    "httpx>=0.28.1",
     "lxml>=5.3.0",
+    "pymongo>=4.11.1",
+    "pyyaml>=6.0.2",
     "selenium>=4.28.0",
-    "setuptools>=75.8.0",  # for undetected-chromedriver
+    "setuptools>=75.8.0", # for undetected-chromedriver
+    "typer>=0.15.1",
     "undetected-chromedriver>=3.5.5",
     "webdriver-manager>=4.0.2",
 ]
@@ -18,10 +20,12 @@ dependencies = [
 [tool.uv]
 dev-dependencies = [
     "ruff>=0.9.4",
+    "pydeps>=3.0.1",
+    "graphviz>=0.20.3",
 ]
 
 [project.scripts]
-example = "app.example:main"
+main = "main:cli_app"
 
 [build-system]
 requires = ["hatchling"]

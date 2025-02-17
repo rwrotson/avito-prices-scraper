@@ -1,0 +1,8 @@
+ME_CONFIG_MONGODB_SERVER=<str!:name-of-mongo-host:pa-mongo>
+ME_CONFIG_MONGODB_PORT=<int!:port-on-mongo-host-where-mongo-is-hosted:27017>
+
+ME_CONFIG_MONGODB_ENABLE_ADMIN=true  # do not change this value
+
+ME_CONFIG_OPTIONS_EDITORTHEME=<str?:name-of-the-style-theme-to-use-in-web-interface:some_theme>
+ME_CONFIG_REQUEST_SIZE=<str!:size-of-request:10kb>
+ME_CONFIG_SITE_SSL_ENABLED=<enum!:to-use-ssl-for-connection-or-not:true|false>

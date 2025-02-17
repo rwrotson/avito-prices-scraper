@@ -1,0 +1,22 @@
+[
+  {
+    "search_query": "довлатов заповедник",
+    "description_query": "заповедник",
+    "max_pages": 5
+  },
+  {
+    "query": {
+      "search_query": "довлатов заповедник",
+      "description_query": "заповедник",
+    },
+    "max_pages": 7
+  },
+  {
+    "query": {
+      "search_query": "довлатов заповедник",
+    },
+    "params": {
+      "max_pages": 10
+    }
+  }
+]

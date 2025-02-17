@@ -1,32 +1,187 @@
+# Description: Docker Compose configuration file for the Avito Parser project.
+
+# SERVICES ---------------------------------------------------------------------
 services:
+  # Parser service -------------------------------------------------------------
   parser:
-    build: .
-    ports:
-      - "8000:8000"
+    build:
+      context: ..
+      dockerfile: docker/parser.Dockerfile
+      args:
+        BASE_IMAGE_TAG: 3.13.1-bookworm
 
-    develop:
-      # Create a `watch` configuration to update the application in the container
-      # https://docs.docker.com/compose/file-watch/#compose-watch-versus-bind-mounts
-      watch:
-        # Sync the working directory with the `/app` directory in the container
-        - action: sync
-          path: ../src
-          target: /app
-          ignore:
-            - .venv/
-            - .idea/
-            - .git/
+    image: avito-parser
+    container_name: avito-parser
+    hostname: avito-parser
+    restart: no
 
-        # Rebuild the image if dependencies change by checking uv.lock
-        - action: rebuild
-          path: ../uv.lock
+    privileged: false
+    read_only: true
+    cpu_count: 1
+    mem_reservation: "256m"
+    mem_limit: "512m"
+    memswap_limit: "1024m"
+    pids_limit: 100
+    security_opt:
+      - "no-new-privileges=true"
 
-  db:
-    image: postgres:13
     env_file:
-      - .env
-    ports:
-      - "5432:5432"
+      - ../.envs/.parser
+      - ../.envs/.mongodb
+    environment:
+      MONGODB_USERNAME_FILE: /run/secrets/mongo-username
+      MONGODB_PASSWORD_FILE: /run/secrets/mongo-password
+    secrets:
+      - mongodb-username
+      - mongodb-password
+
     volumes:
-        - postgres_data:/var/lib/postgresql/data
-        - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../logs:/app:z
+      - ../request_entries:/scripts:z
+
+    networks:
+      - common
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sSf http://localhost:4444/status || exit 1" ]
+      interval: 1m
+      timeout: 15s
+      retries: 3
+      start_period: 1m
+
+
+  # MongoDB service ------------------------------------------------------------
+  mongodb:
+    build:
+      context: ..
+      dockerfile: docker/mongodb.Dockerfile
+      args:
+        BASE_IMAGE_TAG: 7.0.3-ubi9
+
+    privileged: false
+    read_only: true
+    tmpfs:
+      - /tmp
+    cpu_count: 1
+    mem_reservation: "256m"
+    mem_limit: "512m"
+    memswap_limit: "1024m"
+    pids_limit: 100
+    security_opt:
+      - "no-new-privileges=true"
+
+    env_file:
+      - ../.envs/.mongodb
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongodb-root-username
+      MONGODB_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongodb-root-password
+      MONGODB_USERNAME_FILE: /run/secrets/mongodb-username
+      MONGODB_PASSWORD_FILE: /run/secrets/mongodb-password
+    secrets:
+      - mongodb-root-username
+      - mongodb-root-password
+      - mongodb-username
+      - mongodb-password
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongodb_data:/data/db:z
+
+    networks:
+      - common
+
+    healthcheck:
+      test: [ "CMD-SHELL", "/check-mongo." ]
+      interval: 1m
+      timeout: 15s
+      retries: 5
+      start_period: 1m
+
+
+  # MongoExpress service -------------------------------------------------------
+  mongoexpress:
+    build:
+      context: ..
+      dockerfile: docker/mongoexpress.Dockerfile
+      args:
+        BASE_IMAGE_TAG: 1.0.2-20-alpine3.19
+
+    image: avito-mongoexpress
+    container_name: avito-mongoexpress
+    hostname: avito-mongoexpress
+    restart: unless-stopped
+
+    privileged: false
+    read_only: true
+    cpu_count: 1
+    mem_reservation: "128m"
+    mem_limit: "256m"
+    memswap_limit: "512m"
+    pids_limit: 100
+    security_opt:
+      - "no-new-privileges=true"
+
+    env_file:
+      - ../.envs/.mongoexpress
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME_FILE: /run/secrets/mongoexpress-username
+      ME_CONFIG_BASICAUTH_PASSWORD_FILE: /run/secrets/mongoexpress-password
+      ME_CONFIG_MONGODB_ADMINUSERNAME_FILE: /run/secrets/mongodb-root-username
+      ME_CONFIG_MONGODB_ADMINPASSWORD_FILE: /run/secrets/mongodb-root-password
+    secrets:
+      - mongoexpress-username
+      - mongoexpress-password
+      - mongodb-root-username
+      - mongodb-root-password
+
+    ports:
+      - "8081:8081"
+
+    networks:
+      - common
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://0.0.0.0:8081/status" ]
+      interval: 1m
+      timeout: 15s
+      retries: 3
+      start_period: 1m
+
+
+# SECRETS -----------------------------------------------------------------------
+secrets:
+  mongodb-root-username:
+    file: .secrets/.mongodb-root-username
+  mongodb-root-password:
+    file: .secrets/.mongodb-root-password
+  mongodb-username:
+    file: .secrets/.mongodb-username
+  mongodb-password:
+    file: .secrets/.mongodb-password
+  mongoexpress-username:
+    file: .secrets/.mongoexpress-username
+  mongoexpress-password:
+    file: .secrets/.mongoexpress-password
+
+
+# VOLUMES -----------------------------------------------------------------------
+volumes:
+  mongodb_data: {}
+
+
+# NETWORKS ----------------------------------------------------------------------
+networks:
+  common:
+    name: avito-parser-net
+    driver: bridge
+    external: false
