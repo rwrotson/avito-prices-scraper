@@ -10,6 +10,8 @@ from app.models import Product, ReprMode
 
 _console = Console()
 
+type _PresentFunc = Callable[[list[Product]], None]
+
 
 def _present_as_list(products: list[Product]) -> None:
     for i, repr_ in enumerate([pr.repr for pr in products]):
@@ -65,8 +67,6 @@ def _present_as_csv(products: list[Product]) -> None:
             str(pr.description_prices),
         )
 
-
-type _PresentFunc = Callable[[list[Product]], None]
 
 _PRESENT_STRATEGIES_MAPPING: dict[ReprMode, _PresentFunc] = {
     ReprMode.LIST: _present_as_list,

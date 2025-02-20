@@ -11,34 +11,23 @@ MONGO_ROOT_PASSWORD=$(<${MONGODB_INITDB_ROOT_PASSWORD_FILE})
 MONGO_USERNAME=$(<${MONGO_USERNAME_FILE})
 MONGO_PASSWORD=$(<${MONGO_PASSWORD_FILE})
 
-
-check_variables_set() {
-  for var in MONGO_ROOT_USERNAME \
-             MONGO_ROOT_PASSWORD \
-             MONGO_USERNAME \
-             MONGO_PASSWORD; do
-      : "${!var:?Variable $var is not set}"
-  done
-}
-
-wait_for_mongo_to_start() {
-  while ! /check-mongo >/dev/null 2>&1; do
-    echo "Waiting for the script to succeed..."
-    sleep 1
-  done
-}
-
-create_or_update_users() {
-
-
 # -----------------------------------------------------------------------------
 
-check_variables_set
+for var in MONGO_ROOT_USERNAME \
+           MONGO_ROOT_PASSWORD \
+           MONGO_USERNAME \
+           MONGO_PASSWORD; do
+    : "${!var:?Variable $var is not set}"
+done
 
-wait_for_mongo_to_start
+while ! /check-mongo >/dev/null 2>&1; do
+  echo "Waiting for the script to succeed..."
+  sleep 1
+done
 
 echo "Creating or updating MongoDB users... root:${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD} user:${MONGO_USERNAME}:${MONGO_PASSWORD}"
-mongosh "mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@localhost:27017/admin" <<EOF
+
+mongosh "mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@localhost:${MONGO_PORT}/admin" <<EOF
 use admin
 
 // Check if user already exists
@@ -50,8 +39,8 @@ if (!userExists) {
     user: "${MONGO_USERNAME}",
     pwd: "${MONGO_PASSWORD}",
     roles: [
-      { role: "readWrite", db: "${MONGODB_DBNAME}" },
-      { role: "dbAdmin", db: "${MONGODB_DBNAME}" },
+      { role: "readWrite", db: "${MONGO_DBNAME}" },
+      { role: "dbAdmin", db: "${MONGO_DBNAME}" },
     ]
   });
   print("Mongodb user created!");
@@ -59,13 +48,12 @@ if (!userExists) {
   // Update roles if user exists
   db.updateUser("${MONGO_USERNAME}", {
     roles: [
-      { role: "readWrite", db: "${MONGODB_DBNAME}" },
-      { role: "dbAdmin", db: "${MONGODB_DBNAME}" },
+      { role: "readWrite", db: "${MONGO_DBNAME}" },
+      { role: "dbAdmin", db: "${MONGO_DBNAME}" },
     ]
   });
   print("Mongodb user updated!");
 }
 EOF
-}
 
 echo "MongoDB users creation or update complete!"

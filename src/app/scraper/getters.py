@@ -7,8 +7,8 @@ from rich import print
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.expected_conditions import element_attribute_to_include
 
-from app.consts import AVITO_URL, XPath, SAFE_SLEEP_TIME, RICH_COLORS
-from app.driver_interface import get_interface
+from app.consts import AVITO_URL, RICH_COLORS, SAFE_SLEEP_TIME, XPath
+from app.scraper.driver import get_interface
 
 
 def _get_avito_search_page(search_query: str, page_number: int) -> None:
@@ -27,9 +27,6 @@ def _get_card_elements_from_avito_search_page(search_query: str, page_number: in
     interface = get_interface()
 
     _get_avito_search_page(search_query, page_number)
-
-    with open(f"page_{search_query.replace(" ", "_")}_{page_number}.html", "w") as f:
-        f.write(interface.page_source)
 
     return [
         BeautifulSoup(element.get_attribute("outerHTML"), "html.parser")

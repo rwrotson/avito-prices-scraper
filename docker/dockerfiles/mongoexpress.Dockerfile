@@ -9,8 +9,9 @@ ARG IMAGE_USER_ID=1000
 ARG IMAGE_GROUP_NAME=node
 ARG IMAGE_GROUP_ID=1000
 
-# for healthcheck triggering
-RUN apk update && apk add --no-cache curl
+# Install curl for healthcheck triggering
+RUN apk update && \
+    apk add --no-cache curl
 
 # create user and group
 #  && echo ${USER_NAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USER_NAME} \

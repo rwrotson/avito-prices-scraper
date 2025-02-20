@@ -2,6 +2,8 @@ from typing import Callable
 
 from app.models import Product, SortBy, SortOrder, SortParams
 
+type _SorterFunc = Callable[[list[Product], SortOrder], list[Product]]
+
 
 def _sort_by_page[T: Product](products: list[T], sort_order: SortOrder) -> list[T]:
     return products if (sort_order == SortOrder.ASC) else products[::-1]
@@ -14,8 +16,6 @@ def _sort_by_price[T: Product](products: list[T], sort_order: SortOrder) -> list
         reverse=(sort_order == SortOrder.DESC),
     )
 
-
-type _SorterFunc = Callable[[list[Product], SortOrder], list[Product]]
 
 _SORT_STRATEGIES_MAPPING: dict[SortBy, _SorterFunc] = {
     SortBy.PAGE: _sort_by_page,

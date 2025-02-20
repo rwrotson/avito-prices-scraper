@@ -134,7 +134,7 @@ def _parse_params_from_entry(request_entry: dict, entry_index: int, fallback_par
     )
 
 
-def load_request_entries_from_file(file_path: Path, fallback_params_values: Params) -> list[ProductRequest]:
+def load_request_entries_from_file(file_path: Path, fallback_params: Params) -> list[ProductRequest]:
     """Parses a YAML or JSON file with a list of product requests. Example files in 'request-entries' directory."""
     if not (loaded_data := load_data_from_file(file_path)):
         raise ValueError(f"File is empty: {file_path}")
@@ -160,7 +160,7 @@ def load_request_entries_from_file(file_path: Path, fallback_params_values: Para
                 params=_parse_params_from_entry(
                     request_entry=entry,
                     entry_index=i,
-                    fallback_params_values=fallback_params_values,
+                    fallback_params_values=fallback_params,
                 ),
             )
         )

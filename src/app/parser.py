@@ -35,9 +35,12 @@ def parse_product(
     title = a_element["title"]
     url = AVITO_URL + a_element["href"].split("?")[0]
     description = next(
-        (p.text for p in product_element.find_all("p", attrs={"data-marker": False, "itemprop": False})
-         if not p.text.strip().startswith(("<!-- -->", "Доставка"))),
-        ""
+        (
+            p.text
+            for p in product_element.find_all("p", attrs={"data-marker": False, "itemprop": False})
+            if not p.text.strip().startswith(("<!-- -->", "Доставка"))
+        ),
+        "",
     )
     price_from_title = product_element.find("meta", {"itemprop": "price"})["content"]
 
@@ -96,7 +99,6 @@ def parse_description_line(
             is_now_parsing_price = True
 
         elif is_now_parsing_price:
-
             if any(symbol == line[i : i + len(symbol)] for symbol in Symbols.NOT_RUB.values):
                 price, is_now_parsing_price = "", False
                 continue
@@ -118,11 +120,15 @@ def parse_description_line(
     price = validate_price(price) or validate_price(maybe_price)
 
     status = next(
-        (s for s, symbols in {
-            ParsedStatus.SOLD: Symbols.SOLD.values,
-            ParsedStatus.BOOKED: Symbols.BOOKED.values
-        }.items() if any(sym in line for sym in symbols)),
-        ParsedStatus.OK if price else ParsedStatus.NOT_FOUND
+        (
+            status
+            for status, symbols in {
+                ParsedStatus.SOLD: Symbols.SOLD.values,
+                ParsedStatus.BOOKED: Symbols.BOOKED.values,
+            }.items()
+            if any(sym in line for sym in symbols)
+        ),
+        ParsedStatus.OK if price else ParsedStatus.NOT_FOUND,
     )
 
     return DescriptionLine(price=price, status=status)

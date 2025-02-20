@@ -1,43 +1,41 @@
 # Description: Docker Compose configuration file for the Avito Parser project.
+name: avito-prices-full
+
 
 # SERVICES ---------------------------------------------------------------------
 services:
-  # Parser service -------------------------------------------------------------
+  # Parser
   parser:
+    extends:
+      file: minimal.compose.yml
+      service: parser
     build:
-      context: ..
-      dockerfile: docker/parser.Dockerfile
       args:
         BASE_IMAGE_TAG: 3.13.1-bookworm
-
-    image: avito-parser
-    container_name: avito-parser
-    hostname: avito-parser
-    restart: no
-
-    privileged: false
-    read_only: true
-    cpu_count: 1
-    mem_reservation: "256m"
-    mem_limit: "512m"
-    memswap_limit: "1024m"
-    pids_limit: 100
-    security_opt:
-      - "no-new-privileges=true"
+        PROJECT_EDITION: full
+    command: [
+      "python",
+      "-m",
+      "main",
+      "search-on-avito-from-file",
+      "../request-entries/example.yaml",
+      "--max-pages",
+      "5",
+      "--min-price",
+      "40",
+      "--max-price",
+      "10000",
+      "--save-to-db",
+    ]
 
     env_file:
-      - ../.envs/.parser
       - ../.envs/.mongodb
     environment:
-      MONGODB_USERNAME_FILE: /run/secrets/mongo-username
-      MONGODB_PASSWORD_FILE: /run/secrets/mongo-password
+      MONGO_USERNAME_FILE: /run/secrets/mongo-username
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-password
     secrets:
-      - mongodb-username
-      - mongodb-password
-
-    volumes:
-      - ../logs:/app:z
-      - ../request_entries:/scripts:z
+      - mongo-username
+      - mongo-password
 
     networks:
       - common
@@ -46,21 +44,19 @@ services:
       mongodb:
         condition: service_healthy
 
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -sSf http://localhost:4444/status || exit 1" ]
-      interval: 1m
-      timeout: 15s
-      retries: 3
-      start_period: 1m
-
 
   # MongoDB service ------------------------------------------------------------
   mongodb:
     build:
       context: ..
-      dockerfile: docker/mongodb.Dockerfile
+      dockerfile: docker/dockerfiles/mongodb.Dockerfile
       args:
         BASE_IMAGE_TAG: 7.0.3-ubi9
+
+    image: mongodb
+    container_name: mongodb
+    hostname: mongodb
+    restart: unless-stopped
 
     privileged: false
     read_only: true
@@ -77,18 +73,15 @@ services:
     env_file:
       - ../.envs/.mongodb
     environment:
-      MONGODB_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongodb-root-username
-      MONGODB_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongodb-root-password
-      MONGODB_USERNAME_FILE: /run/secrets/mongodb-username
-      MONGODB_PASSWORD_FILE: /run/secrets/mongodb-password
+      MONGODB_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo-root-username
+      MONGODB_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      MONGO_USERNAME_FILE: /run/secrets/mongo-username
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-password
     secrets:
-      - mongodb-root-username
-      - mongodb-root-password
-      - mongodb-username
-      - mongodb-password
-
-    ports:
-      - "27017:27017"
+      - mongo-root-username
+      - mongo-root-password
+      - mongo-username
+      - mongo-password
 
     volumes:
       - mongodb_data:/data/db:z
@@ -97,7 +90,7 @@ services:
       - common
 
     healthcheck:
-      test: [ "CMD-SHELL", "/check-mongo." ]
+      test: [ "CMD-SHELL", "/check-mongo" ]
       interval: 1m
       timeout: 15s
       retries: 5
@@ -108,13 +101,13 @@ services:
   mongoexpress:
     build:
       context: ..
-      dockerfile: docker/mongoexpress.Dockerfile
+      dockerfile: docker/dockerfiles/mongoexpress.Dockerfile
       args:
         BASE_IMAGE_TAG: 1.0.2-20-alpine3.19
 
-    image: avito-mongoexpress
-    container_name: avito-mongoexpress
-    hostname: avito-mongoexpress
+    image: mongoexpress
+    container_name: mongoexpress
+    hostname: mongoexpress
     restart: unless-stopped
 
     privileged: false
@@ -132,13 +125,13 @@ services:
     environment:
       ME_CONFIG_BASICAUTH_USERNAME_FILE: /run/secrets/mongoexpress-username
       ME_CONFIG_BASICAUTH_PASSWORD_FILE: /run/secrets/mongoexpress-password
-      ME_CONFIG_MONGODB_ADMINUSERNAME_FILE: /run/secrets/mongodb-root-username
-      ME_CONFIG_MONGODB_ADMINPASSWORD_FILE: /run/secrets/mongodb-root-password
+      ME_CONFIG_MONGODB_ADMINUSERNAME_FILE: /run/secrets/mongo-root-username
+      ME_CONFIG_MONGODB_ADMINPASSWORD_FILE: /run/secrets/mongo-root-password
     secrets:
       - mongoexpress-username
       - mongoexpress-password
-      - mongodb-root-username
-      - mongodb-root-password
+      - mongo-root-username
+      - mongo-root-password
 
     ports:
       - "8081:8081"
@@ -160,18 +153,18 @@ services:
 
 # SECRETS -----------------------------------------------------------------------
 secrets:
-  mongodb-root-username:
-    file: .secrets/.mongodb-root-username
-  mongodb-root-password:
-    file: .secrets/.mongodb-root-password
-  mongodb-username:
-    file: .secrets/.mongodb-username
-  mongodb-password:
-    file: .secrets/.mongodb-password
+  mongo-root-username:
+    file: ../.secrets/.mongo-root-username
+  mongo-root-password:
+    file: ../.secrets/.mongo-root-password
+  mongo-username:
+    file: ../.secrets/.mongo-username
+  mongo-password:
+    file: ../.secrets/.mongo-password
   mongoexpress-username:
-    file: .secrets/.mongoexpress-username
+    file: ../.secrets/.mongoexpress-username
   mongoexpress-password:
-    file: .secrets/.mongoexpress-password
+    file: ../.secrets/.mongoexpress-password
 
 
 # VOLUMES -----------------------------------------------------------------------

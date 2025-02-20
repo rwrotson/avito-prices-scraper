@@ -8,30 +8,37 @@ FROM python:${BASE_IMAGE_TAG} AS builder
 
 # To optimize the build, set the following environment variables, due to:
 # https://docs.astral.sh/uv/guides/integration/docker/
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
-
-# Install dependencies for Chrome webdriver
-RUN apt update && apt install -y libnss3 libnspr4
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 # Install Chrome browser
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt install -y ./google-chrome-stable_current_amd64.deb && \
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt update && apt install -y \
+      libnss3 \
+      libnspr4 \
+      ./google-chrome-stable_current_amd64.deb && \
     rm google-chrome-stable_current_amd64.deb && \
-    apt clean \
-    && rm -rf /var/lib/apt/lists/*
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install uv by copying the binary from the official distroless Docker image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ARG PROJECT_EDITION=minimal
 
 WORKDIR /app
 
 # Install the project's dependencies using the lockfile and settings
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --no-dev
+    if [ "$PROJECT_EDITION" = "full" ]; then \
+        uv sync --frozen --no-install-project --no-dev --extra db-libs; \
+    else \
+        uv sync --frozen --no-install-project --no-dev; \
+    fi
 
 # Add the rest of the project source code and install it (Installing separately from its dependencies allows optimal layer caching)
-COPY ../src README.md LICENSE /app/
+COPY ../../src README.md LICENSE ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
@@ -47,14 +54,21 @@ COPY --from=builder /usr /usr
 COPY --from=builder /etc /etc
 COPY --from=builder /opt /opt
 
+ARG USER=appuser
+ARG GROUP=appgroup
+
 # Create a non-root user for security
-RUN groupadd --system appgroup && useradd --system --create-home --gid appgroup appuser
+RUN groupadd --system ${GROUP} && \
+    useradd --system --create-home --gid ${GROUP} ${USER}
+
+ARG HOME="/home/$USER/src"
+WORKDIR $HOME
 
 # Copy the application from the builder
-COPY --from=builder --chown=appuser:appgroup /app /app
+COPY --from=builder --chown=${USER}:${GROUP} /app $HOME
 
 # Place executables in the environment at the front of the path and set other environment variables
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PATH="$HOME/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DISPLAY=:99 \
@@ -62,14 +76,5 @@ ENV PATH="/app/.venv/bin:$PATH" \
     FORCE_COLOR=1 \
     CHROME_BINARY="/usr/bin/google-chrome"
 
-WORKDIR /app
-
 # Switch to the non-root user
-USER appuser
-
-# Mount the logs directory as a volume
-VOLUME /app/logs
-VOLUME /app/media
-
-# Run the application by default
-CMD ["python", "-m", "main", "search-on-avito-from-file", "./request_entries/example.yaml", "--max-pages", "5", "--min-price", "20"]
+USER $USER

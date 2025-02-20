@@ -5,11 +5,11 @@ FROM mongodb/mongodb-community-server:${BASE_IMAGE_TAG} AS runner
 USER root
 
 # copy healthcheck script
-COPY --chown=mongod:mongod docker/_check-mongo /check-mongo
+COPY --chown=mongod:mongod docker/configs/check-mongo /check-mongo
 RUN chmod +x /check-mongo
 
 # copy initialization script
-COPY --chown=mongod:mongod docker/_init-mongo /docker-entrypoint-initdb.d/init-mongo.sh
+COPY --chown=mongod:mongod docker/configs/init-mongo /docker-entrypoint-initdb.d/init-mongo.sh
 RUN chmod +x /docker-entrypoint-initdb.d/init-mongo.sh
 
 USER mongod

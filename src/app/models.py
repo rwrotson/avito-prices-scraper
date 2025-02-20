@@ -1,6 +1,13 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum, auto
 from functools import cached_property
+from typing import NamedTuple
+
+
+class DatetimeRange(NamedTuple):
+    gte: datetime | None = None
+    lte: datetime | None = None
 
 
 class ReprMode(StrEnum):

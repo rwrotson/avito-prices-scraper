@@ -1,29 +1,20 @@
 from enum import Enum, StrEnum
 from os import getenv
-from typing import Any
 
-
-def _get_env_or_secret(key: str, *, default: Any = None) -> str:
-    if value := getenv(key):
-        return value
-    if file_path := getenv(f"{key}_FILE"):
-        with open(file_path, "r") as f:
-            return f.read().strip()
-    return default
-
-
-SAFE_SLEEP_TIME = float(getenv("AVITO_PARSER_SAFE_SLEEP_TIME", default=1.0))
-RICH_COLORS = ("blue", "magenta", "cyan")
+from app.utils import get_env_or_secret
 
 AVITO_URL = "https://www.avito.ru"
 
+RICH_COLORS = ("blue", "magenta", "cyan")
 
-MONGO_USERNAME = _get_env_or_secret("MONGODB_USERNAME")
-MONGO_PASSWORD = _get_env_or_secret("MONGODB_PASSWORD")
-MONGO_HOST = _get_env_or_secret("MONGODB_HOST")
-MONGO_PORT = int(_get_env_or_secret("MONGODB_PORT", default=27017))
-MONGO_DB = _get_env_or_secret("MONGODB_DB")
-MONGO_URL = f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DB}"
+SAFE_SLEEP_TIME = float(getenv("AVITO_PARSER_SAFE_SLEEP_TIME", default=1.0))
+
+MONGO_USERNAME = get_env_or_secret("MONGO_USERNAME")
+MONGO_PASSWORD = get_env_or_secret("MONGO_PASSWORD")
+MONGO_HOST = get_env_or_secret("MONGO_HOST")
+MONGO_PORT = int(get_env_or_secret("MONGO_PORT", default=27017))
+MONGO_DBNAME = get_env_or_secret("MONGO_DBNAME")
+MONGO_URL = f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}"
 
 
 class XPath(StrEnum):
@@ -72,3 +63,9 @@ class Symbols(Enum):
     @property
     def values(self) -> frozenset[str]:
         return frozenset(self.value) | frozenset({f" {symbol}" for symbol in self.value})
+
+
+RUB_SYMBOLS = Symbols.RUB.values
+NOT_RUB_SYMBOLS = Symbols.NOT_RUB.values
+SOLD_SYMBOLS = Symbols.SOLD.values
+BOOKED_SYMBOLS = Symbols.BOOKED.values

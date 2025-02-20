@@ -1,0 +1,60 @@
+# Description: Docker Compose configuration file for the Avito Parser project.
+name: avito-prices-minimal
+
+
+# SERVICES ---------------------------------------------------------------------
+services:
+  # Parser service -------------------------------------------------------------
+  parser:
+    build:
+      context: ..
+      dockerfile: docker/dockerfiles/parser.Dockerfile
+      args:
+        BASE_IMAGE_TAG: 3.13.1-bookworm
+        PROJECT_EDITION: minimal
+    command: [
+      "python",
+      "-m",
+      "main",
+      "search-on-avito-from-file",
+      "../request-entries/example.yaml",
+      "--max-pages",
+      "5",
+      "--min-price",
+      "40",
+      "--max-price",
+      "10000",
+    ]
+
+    image: parser
+    container_name: parser
+    hostname: parser
+    restart: no
+
+    privileged: false
+#    read_only: true
+#    tmpfs:
+#      - /tmp
+#      - /home/appuser/.wdm
+#      - /home/appuser/.local
+#    cpu_count: 2
+#    mem_reservation: "1024m"
+#    mem_limit: "2048m"
+#    memswap_limit: "4096m"
+#    pids_limit: 150
+#    security_opt:
+#      - "no-new-privileges=true"
+
+    env_file:
+      - ../.envs/.parser
+
+    volumes:
+      - ../logs:/home/appuser/logs:z
+      - ../request-entries:/home/appuser/request-entries:z
+
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sSf http://localhost:4444/status || exit 1" ]
+      interval: 1m
+      timeout: 15s
+      retries: 3
+      start_period: 1m
