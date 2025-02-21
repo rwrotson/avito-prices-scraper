@@ -30,7 +30,7 @@ dev-dependencies = [
 ]
 
 [project.scripts]
-main = "main:cli_app"
+avito-prices-scraper = "app.app:cli_app"
 
 [build-system]
 requires = ["hatchling"]

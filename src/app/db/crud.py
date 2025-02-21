@@ -25,9 +25,9 @@ def save_to_db(*, product_request: ProductRequest, products: Iterable[Product], 
 
 def get_requests_from_db(
     *,
-    queries: Iterable[Query] = None,
-    timestamps: Iterable[DatetimeRange] = None,
     request_ids: Iterable[str] = None,
+    queries: Iterable[Query] = None,
+    datetime_ranges: Iterable[DatetimeRange] = None,
 ) -> tuple[list[ProductRequest], list[str]]:
     """
     Get product requests from the database by one or more params.
@@ -35,18 +35,18 @@ def get_requests_from_db(
     Return tuple of requests and their IDs.
     """
     query_dict = {}
+    if request_ids:
+        query_dict["_id"] = {"$in": [ObjectId(id_) if ObjectId.is_valid(id_) else id_ for id_ in request_ids]}
     if queries:
         query_dict["$and"] = [{f"query.{k}": v for k, v in asdict(query).items()} for query in queries]  # noqa
-    if timestamps:
+    if datetime_ranges:
         timestamp_conditions = [
             {"timestamp": {k: v for k, v in [("$gte", start), ("$lte", end)] if v is not None}}
-            for start, end in timestamps
+            for start, end in datetime_ranges
             if start or end
         ]
         if timestamp_conditions:
             query_dict["$or"] = query_dict.get("$or", []) + timestamp_conditions
-    if request_ids:
-        query_dict["_id"] = {"$in": [ObjectId(id_) if ObjectId.is_valid(id_) else id_ for id_ in request_ids]}
 
     requests = db["requests"].find(query_dict)
 

@@ -15,7 +15,7 @@ services:
     command: [
       "python",
       "-m",
-      "main",
+      "avito-prices-parser",
       "search-on-avito-from-file",
       "../request-entries/example.yaml",
       "--max-pages",

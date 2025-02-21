@@ -34,10 +34,10 @@ def search_on_avito(
     """
     Search for products on Avito by given queries.
 
-    For options except for 'description_queries':\n
-      - when single value is provided, it will be used for all search queries\n
+    For 'title_queries' and 'description_queries' options:\n
       - when list of values is provided, it should be of the same length as 'search_queries',
     as each value will be used for corresponding search query
+      - when None values are provided, they default to 'search_queries'
     """
     search_queries, title_queries, description_queries = parsers.parse_queries(
         search_queries=search_queries,
@@ -101,7 +101,7 @@ def search_on_avito_from_file(
     The file in YAML or JSON format should contain a list of dictionaries with request params,
     where each dictionary represents query and params for a single search request.
 
-    You can find examples of this file in 'request_entries' directory.
+    You can find examples of this file in 'request-entries' directory.
 
     Other options provide fallback values for all params, when they are not provided in the file.
     """
@@ -151,12 +151,9 @@ def search_in_db(
     template: opts.Template = defaults.TEMPLATE,
 ) -> None:
     """
-    Search for products on Avito by given queries.
+    Search for product_requests and resulting products.
 
-    For options except for 'description_queries':\n
-      - when single value is provided, it will be used for all search queries\n
-      - when list of values is provided, it should be of the same length as 'search_queries',
-    as each value will be used for corresponding search query
+
     """
     try:
         from app.db import get_products_from_db, get_requests_from_db
