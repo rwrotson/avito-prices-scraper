@@ -160,12 +160,14 @@ RequestIds = Annotated[
 DatetimeLte = Annotated[
     datetime | None,
     Option(
+        parser=datetime.fromisoformat,
         help="Filter by max timestamp.",
     ),
 ]
 DatetimeGte = Annotated[
     datetime | None,
     Option(
+        parser=datetime.fromisoformat,
         help="Filter by min timestamp.",
     ),
 ]
